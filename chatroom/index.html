@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.firebase.com/js/client/2.2.1/firebase.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <style type="text/css">
+    .hidden{display:none}
+    .visible{display:block}
+  </style>
+  <link rel="stylesheet" type="text/css" href="/resources/tutorial/css/example.css">
+</head>
+<body>
+<div id="usernameInput" class="visible" style="background:#FFFFFF;position:absolute;height:100%;width:100%">
+  <div style="background:#EED2EE;position:absolute;height:300px;width:300px;top:60px;left:500px">
+    <div style="background:#EED2EE;position:absolute;top:50px;left:20px">
+      <label for="nameInput">Username:</label>
+      <input type="text" id="nameInput" placeholder="enter a username...">
+    </div>
+  </div>
+</div>
+<div id="messagesList"class="hidden" style="background:#FFF123;position:absolute;height:450px;width:500px;top:100px;left:400px">
+    <div style="background:#EED2CC;position:absolute;height:320px;width:250px;top:0px;left:0px">
+        <div style="color:Purple;position:absolute;top:0px;left:50px">Shadow's chatroom</div>
+        <div style="position:absolute;height:300px;width:250px;top:20px;left:0px;overflow:scroll; overflow-x:hidden">
+            <ul id="example-messages"></ul>
+        </div>
+    </div>
+    <div style="background:#AAD2EE;position:absolute;height:320px;width:250px;top:0px;left:250px">
+        <div style="color:Olive;position:absolute;top:0px;left:50px">users online</div>
+        <div style="position:absolute;height:300px;width:250px;top:20px;left:0px;overflow:scroll; overflow-x:hidden">
+            <ul id="example-users"></ul>
+        </div>
+    </div>
+    <div style="position:absolute;top:350px;left:120px">
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <input type="button" id="button" value="send">
+    </div>
+   
+</div>
+<script type="text/javascript">
+    var messagesRef = new Firebase("https://hjchatroom.firebaseio.com/message/");
+    var userRef = new Firebase("https://hjchatroom.firebaseio.com/user/");
+
+    var messageField = $("#messageInput");
+  var nameField = $("#nameInput");
+  var messageList = $("#example-messages");
+  var userList = $("#example-users");
+  var nameBox = document.getElementById("usernameInput");
+  var messagesList = document.getElementById("messagesList");
+  var btn = document.getElementById("button");
+  var nameTemp, nameId;
+  userRef.limitToLast(10).on("child_added", function (snapshot) {
+      var nameElement = $("<li>");
+      nameElement.attr("id", snapshot.val().name);
+      nameElement.text(snapshot.val().name);
+      userList.append(nameElement);
+  });
+  userRef.on('child_removed', function (snapshot) {
+      var str = "li#" + snapshot.val().name;
+      $(str).remove();
+  });
+  btn.onclick = function () {
+      var message = messageField.val();
+      if (message == '')
+          return;
+      messagesRef.push({ name: nameTemp, text: message });
+      messageField.val('');
+  };
+  nameField.keypress(function (e) {
+      if (e.keyCode == 13) {
+          if (nameField.val() == "")
+              return;
+          var allUsers = new Array;
+          allUsers = userList.children();
+          for (i = 0; i < allUsers.length; i++) {
+              if (allUsers[i].getAttribute("id") == nameField.val()) {
+                  alert("The username exits!");
+                  nameField.val('');
+                  return;
+              }
+          }
+          nameTemp = nameField.val();
+          var userImf = userRef.push({ name: nameTemp });
+          nameId = userImf.name();
+          nameField.val('');
+          nameBox.setAttribute("class", "hidden");
+          messagesList.setAttribute("class", "visible");
+      }
+  })
+  messageField.keypress(function (e) {
+      if (e.keyCode == 13) {
+          var message = messageField.val();
+          if (message == '')
+              return;
+          messagesRef.push({ name: nameTemp, text: message });
+          messageField.val('');
+      }
+  });
+  window.onbeforeunload = function (e) {
+      var nameAbsoluteId = "https://hjchatroom.firebaseio.com/user/" + nameId;
+      var Remove = new Firebase(nameAbsoluteId);
+      Remove.remove();
+  }
+
+  messagesRef.limitToLast(10).on("child_added", function (snapshot) {
+      var data = snapshot.val();
+      var username = data.name || "anonymous";
+      var message = data.text;
+      var messageElement = $("<li>");
+      var nameElement = $("<strong></strong>");
+      nameElement.text(username);
+      messageElement.text(message).prepend(nameElement);
+      messageList.append(messageElement);
+      messageList[0].scrollTop = messageList[0].scrollHeight;
+  });
+</script>
+</body>
+</html>

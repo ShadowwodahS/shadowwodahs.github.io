@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<title>Game of Life</title>
+<meta charset="utf-8" />
+</head>
+<body>
+<div>
+    <input type="button" value="开始游戏" onclick="start()" />
+    <input type="button" value="重置" onclick="reset()" />
+    <div>
+        宽度：（10～100）<input id="mapwidth" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" />
+    </div>
+    <div>
+        高度：（10～100）<input id="mapheight" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" />
+    </div>
+    <div>
+        刷新帧率：（30～1000）<input id="updaterate" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" />
+    </div>
+    <div>
+        密度：（0～1）<input id="density" type=text t_value="" o_value="" onkeypress="if(!this.value.match(/^[\+\-]?\d*?\.?\d*?$/))this.value=this.t_value;else this.t_value=this.value;if(this.value.match(/^(?:[\+\-]?\d+(?:\.\d+)?)?$/))this.o_value=this.value" onkeyup="if(!this.value.match(/^[\+\-]?\d*?\.?\d*?$/))this.value=this.t_value;else this.t_value=this.value;if(this.value.match(/^(?:[\+\-]?\d+(?:\.\d+)?)?$/))this.o_value=this.value" onblur="if(!this.value.match(/^(?:[\+\-]?\d+(?:\.\d+)?|\.\d*?)?$/))this.value=this.o_value;else{if(this.value.match(/^\.\d+$/))this.value=0+this.value;if(this.value.match(/^\.$/))this.value=0;this.o_value=this.value}" />
+    </div>
+    <div>
+        <input type="button" value="确定修改" onclick="change()" />
+    </div>
+</div>
+<script>
+    var canvas = document.createElement("canvas");
+    var ctx = canvas.getContext("2d");
+    var mapwidth = 50;
+    var mapheight = 30;
+    var maxwidth = 100;
+    var maxheight = 100;
+    var blocksize = 10;
+    var windowleft = 0;
+    var windowtop = 0;
+    var density = 0.5;
+    var updaterate = 60;
+    canvas.width = blocksize * maxwidth;
+    canvas.height = blocksize * maxheight;
+    document.body.appendChild(canvas);
+
+    var Map = new Array;
+    var newMap = new Array;
+    var i, j, lifecount;
+    for (i = 0; i < maxheight + 4; i++) {
+        Map[i] = new Array;
+        newMap[i] = new Array;
+        for (j = 0; j < maxwidth + 4; j++)
+            Map[i][j] = 0;
+    }
+    var gamestart = false;
+
+    canvas.addEventListener("mousedown", function (e) {
+        if (gamestart)
+            return;
+        var event = e ? e : window.e;
+        var xi = parseInt((event.offsetX - windowleft) / blocksize);
+        var yi = parseInt((event.offsetY - windowtop) / blocksize);
+        if ((xi >= 2) && (yi >= 2) && (xi < mapwidth + 2) && (yi < mapheight + 2))
+            Map[yi][xi] = 2;
+    }, false);
+
+    var reset = function() {
+        gamestart = false;
+        for (i = 0; i < mapheight + 4; i++)
+            for (j = 0; j < mapwidth + 4; j++)
+                Map[i][j] = 0;
+    };
+
+    var start = function() {
+        gamestart = true;
+	for (i = 2; i < mapheight + 2; i++)
+            for (j = 2; j < mapwidth + 2; j++)
+                if (Map[i][j] == 0)
+                    if (Math.random() < density)
+                        Map[i][j] = 1;
+                    else
+                        Map[i][j] = 0;
+    };
+
+    var change = function () {
+        if (document.getElementById('mapheight').value != '') {
+            var tempheight = parseInt(document.getElementById('mapheight').value);
+            if (tempheight > maxheight)
+                mapheight = maxheight;
+            else
+                if (tempheight < 10)
+                    mapheight = 10;
+                else
+                    mapheight = tempheight;
+        }
+        if (document.getElementById('mapwidth').value != '') {
+            var tempwidth = parseInt(document.getElementById('mapwidth').value);
+            if (tempwidth > maxwidth)
+                mapwidth = maxwidth;
+            else
+                if (tempwidth < 10)
+                    mapwidth = 10;
+                else
+                    mapwidth = tempwidth;
+        }
+        if (document.getElementById('updaterate').value != '') {
+            var temprate = parseInt(document.getElementById('updaterate').value);
+            if (temprate > 1000)
+                updaterate = 1000;
+            else
+                if (temprate < 30)
+                    updaterate = 30;
+                else
+                    updaterate = temprate;
+        }
+        if (document.getElementById('density').value != '') {
+            var tempdensity = parseFloat(document.getElementById('density').value);
+            if (tempdensity > 1)
+                density = 1;
+            else
+                if (tempdensity < 0)
+                    density = 0;
+                else
+                    density = tempdensity;
+        }
+        reset();
+    }
+
+    var update = function() {
+        if (!gamestart)
+            return;
+        for (i = 2; i < mapheight + 2; i++)
+            for (j = 2; j < mapwidth + 2; j++) {
+                if (Map[i][j] == 2) {
+                    newMap[i][j] = 2;
+                    continue;
+                }
+                lifecount = 0;
+                if (Map[i - 2][j] == 1)
+                    lifecount++;
+                if (Map[i - 1][j] == 1)
+                    lifecount++;
+                if (Map[i + 1][j] == 1)
+                    lifecount++;
+                if (Map[i + 2][j] == 1)
+                    lifecount++;
+                if (Map[i][j - 2] == 1)
+                    lifecount++;
+                if (Map[i][j - 1] == 1)
+                    lifecount++;
+                if (Map[i][j + 1] == 1)
+                    lifecount++;
+                if (Map[i][j + 2] == 1)
+                    lifecount++;
+                if (lifecount == 2)
+                    newMap[i][j] = Map[i][j];
+                else
+                    if (lifecount == 3)
+                        newMap[i][j] = 1;
+                    else
+                        newMap[i][j] = 0;
+            }
+        for (i = 0; i < mapheight + 4; i++)
+            for (j = 0; j < mapwidth + 4; j++)
+                Map[i][j] = newMap[i][j];
+    };
+
+    var render = function () {
+        var windowright = windowleft + mapwidth * blocksize;
+        var windowbottom = windowtop + mapheight * blocksize;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(windowleft, windowtop, canvas.width, canvas.height);
+        ctx.strokeStyle = "#000000";
+        for (i = 2; i < mapheight + 2; i++)
+            for (j = 2; j < mapwidth + 2; j++) {
+                switch (Map[i][j]) {
+                case 0:
+                    if (!gamestart)
+                        ctx.fillStyle = "#00FFFF";
+                    else
+                        ctx.fillStyle = "#000000";
+                    break;
+                case 1:
+                    ctx.fillStyle = "#FFFFFF";
+                    break;
+                default:
+                    if (!gamestart)
+                        ctx.fillStyle = "#00FF00";
+                    else
+                        ctx.fillStyle = "#FF0000";
+                }
+                ctx.fillRect(windowleft + j * blocksize, windowtop + i * blocksize, blocksize, blocksize);
+                ctx.strokeRect(windowleft + j * blocksize, windowtop + i * blocksize, blocksize, blocksize);
+            }
+    };
+
+    var main = function () {
+        update();
+        render();
+        setTimeout(main, updaterate);
+    };
+
+    reset();
+    main();
+</script>
+</body>
